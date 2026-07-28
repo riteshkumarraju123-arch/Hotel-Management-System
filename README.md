@@ -27,7 +27,7 @@
 
     .room-card-img-wrapper {
       position: relative;
-      height: 180px;
+      height: 200px;
       overflow: hidden;
       background-color: #e9ecef;
     }
@@ -177,14 +177,20 @@
             <label class="form-label">Search rooms</label>
             <input type="text" id="roomSearch" class="form-control" placeholder="Search by name..." />
           </div>
-          <div class="col-md-3">
+          <div class="col-md-4">
             <label class="form-label">Filter by type</label>
             <select id="roomTypeFilter" class="form-select">
               <option value="">All types</option>
               <option value="Single">Single</option>
-              <option value="Double">Double</option>
-              <option value="Suite">Suite</option>
-              <option value="Deluxe">Deluxe</option>
+              <option value="Double / Queen">Double / Queen</option>
+              <option value="King">King</option>
+              <option value="Twin">Twin</option>
+              <option value="Double-Double / Quad">Double-Double / Quad</option>
+              <option value="Studio">Studio</option>
+              <option value="Junior Suite">Junior Suite</option>
+              <option value="Full Suite">Full Suite</option>
+              <option value="Royal Suite">Royal Suite</option>
+              <option value="Villa">Villa</option>
             </select>
           </div>
           <div class="col-md-3 ms-auto d-flex gap-2">
@@ -219,27 +225,33 @@
   <div class="modal fade" id="roomModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title" id="roomModalTitle">Room</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-header"><h5 class="modal-title" id="roomModalTitle">Room Details</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
           <form id="roomForm">
             <input type="hidden" id="roomId" />
-            <div class="mb-3"><label class="form-label">Room Name</label><input type="text" id="roomName" class="form-control" required /></div>
-            <div class="mb-3"><label class="form-label">Type</label>
+            <div class="mb-3"><label class="form-label">Room Name</label><input type="text" id="roomName" class="form-control" required placeholder="e.g. Royal Ocean Villa" /></div>
+            <div class="mb-3"><label class="form-label">Type & Layout</label>
               <select id="roomType" class="form-select" required>
                 <option value="Single">Single</option>
-                <option value="Double">Double</option>
-                <option value="Suite">Suite</option>
-                <option value="Deluxe">Deluxe</option>
+                <option value="Double / Queen">Double / Queen</option>
+                <option value="King">King</option>
+                <option value="Twin">Twin</option>
+                <option value="Double-Double / Quad">Double-Double / Quad</option>
+                <option value="Studio">Studio</option>
+                <option value="Junior Suite">Junior Suite</option>
+                <option value="Full Suite">Full Suite</option>
+                <option value="Royal Suite">Royal Suite</option>
+                <option value="Villa">Villa</option>
               </select>
             </div>
             <div class="mb-3"><label class="form-label">Price per night ($)</label><input type="number" id="roomPrice" class="form-control" required /></div>
-            <div class="mb-3"><label class="form-label">Image URL</label><input type="url" id="roomImage" class="form-control" placeholder="https://..." /></div>
+            <div class="mb-3"><label class="form-label">Custom Image URL (Optional)</label><input type="url" id="roomImage" class="form-control" placeholder="https://..." /></div>
             <div class="mb-3"><label class="form-label">Status</label>
               <select id="roomStatus" class="form-select"><option value="available">Available</option><option value="booked">Booked</option></select>
             </div>
           </form>
         </div>
-        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" id="roomSaveBtn" class="btn btn-primary">Save</button></div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" id="roomSaveBtn" class="btn btn-primary">Save Room</button></div>
       </div>
     </div>
   </div>
@@ -257,7 +269,7 @@
             <div class="mb-3"><label class="form-label">Check-out Date</label><input type="date" id="bookingCheckout" class="form-control" required /></div>
           </form>
         </div>
-        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" id="bookingSaveBtn" class="btn btn-primary">Save</button></div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" id="bookingSaveBtn" class="btn btn-primary">Save Booking</button></div>
       </div>
     </div>
   </div>
@@ -268,17 +280,22 @@
 <script>
   (function() {
     const STORAGE = {
-      rooms: 'hotel_rooms',
-      bookings: 'hotel_bookings',
+      rooms: 'hotel_rooms_v5',
+      bookings: 'hotel_bookings_v5',
       currentUser: 'hotel_current_user'
     };
 
-    // Pre-curated photo assets mapped by type
-    const DEFAULT_IMAGES = {
+    const TYPE_FALLBACKS = {
       'Single': 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80',
-      'Double': 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=800&q=80',
-      'Suite': 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
-      'Deluxe': 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80'
+      'Double / Queen': 'https://cdn.thealtairhotel.com/s3-uploads/20210908171806/Altair-QQ-1-LG-1920x1281.jpg',
+      'King': 'https://ik.imagekit.io/tvlk/blog/2024/12/shutterstock_2521917539.jpg?tr=q-70,c-at_max,w-1000,h-600',
+      'Twin': 'https://arlohotels.com/soho/wp-content/uploads/sites/2/2022/05/two-twin-room-1.jpeg',
+      'Double-Double / Quad': 'https://www.frasersproperty.com/content/dam/frasers-hospitality/english/properties/united-kingdom/south-kensington/park-international-hotel-south-kensington/images/gallery-images/rooms/room-type-main-images/quad-room/PIHL_Quad%20Room.jpg',
+      'Studio': 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80',
+      'Junior Suite': 'https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=800&q=80',
+      'Full Suite': 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
+      'Royal Suite': 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
+      'Villa': 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80'
     };
 
     function getData(key) {
@@ -292,10 +309,22 @@
     function initRooms() {
       if (!localStorage.getItem(STORAGE.rooms)) {
         const defaults = [
-          { id: 1, name: 'Ocean Vista Room', type: 'Double', price: 180, status: 'available', image: DEFAULT_IMAGES['Double'] },
-          { id: 2, name: 'Garden Executive Suite', type: 'Suite', price: 290, status: 'available', image: DEFAULT_IMAGES['Suite'] },
-          { id: 3, name: 'Minimalist Studio Single', type: 'Single', price: 95, status: 'booked', image: DEFAULT_IMAGES['Single'] },
-          { id: 4, name: 'Presidential Penthouse', type: 'Deluxe', price: 520, status: 'available', image: DEFAULT_IMAGES['Deluxe'] }
+          // Scenic Views
+          { id: 1, name: 'Ocean Vista Suite', type: 'King', price: 350, status: 'available', image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80' },
+          { id: 2, name: 'Sunset Bay Deluxe', type: 'Double / Queen', price: 260, status: 'available', image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=800&q=80' },
+          { id: 3, name: 'Garden Sanctuary Room', type: 'Twin', price: 190, status: 'booked', image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80' },
+          { id: 4, name: 'Skyline Terrace King', type: 'King', price: 380, status: 'available', image: 'https://ik.imagekit.io/tvlk/blog/2024/12/shutterstock_2521917539.jpg?tr=q-70,c-at_max,w-1000,h-600' },
+          { id: 5, name: 'Mountain Crest Studio', type: 'Studio', price: 210, status: 'available', image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80' },
+          
+          // Color & Gemstone Themes
+          { id: 6, name: 'Emerald Haven Room', type: 'Double-Double / Quad', price: 310, status: 'available', image: 'https://images.unsplash.com/photo-1602002418082-a4443e081dd1?auto=format&fit=crop&w=800&q=80' },
+          { id: 7, name: 'Sapphire Coastal Suite', type: 'Junior Suite', price: 420, status: 'booked', image: 'https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=800&q=80' },
+          { id: 8, name: 'Amber Sunset Villa', type: 'Villa', price: 850, status: 'available', image: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80' },
+          { id: 9, name: 'Ivory Crown Penthouse', type: 'Royal Suite', price: 1200, status: 'available', image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80' },
+
+          // Architectural / Suite Additions
+          { id: 10, name: 'Grand Executive Full Suite', type: 'Full Suite', price: 600, status: 'available', image: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=800&q=80' },
+          { id: 11, name: 'Private Lagoon Sanctuary', type: 'Villa', price: 950, status: 'available', image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80' }
         ];
         setData(STORAGE.rooms, defaults);
       }
@@ -304,12 +333,14 @@
     function initBookings() {
       if (!localStorage.getItem(STORAGE.bookings)) {
         setData(STORAGE.bookings, [
-          { id: 1, customer: 'Alice Johnson', roomId: 3, checkin: '2026-07-20', checkout: '2026-07-25' }
+          { id: 101, customer: 'Alice Johnson', roomId: 3, checkin: '2026-07-20', checkout: '2026-07-25' },
+          { id: 102, customer: 'David Smith', roomId: 7, checkin: '2026-07-22', checkout: '2026-07-29' }
         ]);
       }
     }
 
-    initRooms(); initBookings();
+    initRooms(); 
+    initBookings();
 
     const $ = id => document.getElementById(id);
 
@@ -349,18 +380,18 @@
       if (typeFilter) rooms = rooms.filter(r => r.type === typeFilter);
 
       if (rooms.length === 0) {
-        container.innerHTML = '<div class="col-12 text-center text-muted py-5">No rooms matching parameters.</div>';
+        container.innerHTML = '<div class="col-12 text-center text-muted py-5">No rooms found.</div>';
         return;
       }
 
       container.innerHTML = rooms.map(room => {
-        const imageUrl = room.image || DEFAULT_IMAGES[room.type] || DEFAULT_IMAGES['Double'];
+        const imageUrl = room.image || TYPE_FALLBACKS[room.type] || TYPE_FALLBACKS['Single'];
         return `
           <div class="col-md-6 col-lg-4">
             <div class="card room-card h-100 d-flex flex-column justify-content-between">
               <div>
                 <div class="room-card-img-wrapper">
-                  <img src="${imageUrl}" class="room-card-img" alt="${room.name}" onerror="this.src='${DEFAULT_IMAGES['Double']}'" />
+                  <img src="${imageUrl}" class="room-card-img" alt="${room.name}" onerror="this.src='${TYPE_FALLBACKS['Single']}'" />
                   <span class="badge ${room.status === 'available' ? 'bg-success' : 'bg-warning text-dark'} status-badge">${room.status}</span>
                   <div class="price-tag"><strong>$${room.price}</strong> / night</div>
                 </div>
@@ -375,7 +406,7 @@
                 <button class="btn btn-sm btn-outline-primary editRoomBtn" data-id="${room.id}"><i class="bi bi-pencil"></i> Edit</button>
                 <button class="btn btn-sm btn-outline-danger deleteRoomBtn" data-id="${room.id}"><i class="bi bi-trash"></i></button>
                 ${room.status === 'available' 
-                  ? `<button class="btn btn-sm btn-success checkInBtn ms-auto" data-id="${room.id}"><i class="bi bi-box-arrow-in-right"></i> Quick Check-In</button>`
+                  ? `<button class="btn btn-sm btn-success checkInBtn ms-auto" data-id="${room.id}"><i class="bi bi-box-arrow-in-right"></i> Check In</button>`
                   : `<button class="btn btn-sm btn-warning checkOutBtn ms-auto" data-id="${room.id}"><i class="bi bi-box-arrow-right"></i> Check Out</button>`
                 }
               </div>
@@ -384,7 +415,6 @@
         `;
       }).join('');
 
-      // Event binding
       container.querySelectorAll('.editRoomBtn').forEach(btn => btn.onclick = () => editRoom(Number(btn.dataset.id)));
       container.querySelectorAll('.deleteRoomBtn').forEach(btn => btn.onclick = () => deleteRoom(Number(btn.dataset.id)));
       container.querySelectorAll('.checkInBtn').forEach(btn => btn.onclick = () => checkInRoom(Number(btn.dataset.id)));
@@ -440,10 +470,11 @@
 
       container.innerHTML = `<ul class="list-group">` + bookings.map(b => {
         const room = rooms.find(r => r.id === b.roomId);
+        const roomImg = room ? room.image : TYPE_FALLBACKS['Single'];
         return `
           <li class="list-group-item d-flex justify-content-between align-items-center py-3">
             <div class="d-flex align-items-center gap-3">
-              <img src="${room ? room.image : DEFAULT_IMAGES['Single']}" class="rounded" style="width: 50px; height: 50px; object-fit: cover;" />
+              <img src="${roomImg}" class="rounded" style="width: 50px; height: 50px; object-fit: cover;" />
               <div>
                 <h6 class="mb-0 fw-bold">${b.customer}</h6>
                 <small class="text-muted">${room ? room.name : 'Unknown Room'} &bull; ${b.checkin} to ${b.checkout}</small>
@@ -453,6 +484,14 @@
           </li>
         `;
       }).join('') + `</ul>`;
+    }
+
+    function populateBookingModal() {
+      const select = $('bookingRoomSelect');
+      const availableRooms = getData(STORAGE.rooms).filter(r => r.status === 'available');
+      select.innerHTML = availableRooms.length 
+        ? availableRooms.map(r => `<option value="${r.id}">${r.name} (${r.type} - $${r.price}/night)</option>`).join('')
+        : '<option value="">No available rooms</option>';
     }
 
     window.cancelBooking = function(id) {
@@ -483,6 +522,7 @@
       renderRooms();
       renderBookings();
       renderCustomers();
+      populateBookingModal();
     }
 
     $('addRoomBtn').onclick = () => {
@@ -495,7 +535,7 @@
       const name = $('roomName').value.trim();
       const type = $('roomType').value;
       const price = Number($('roomPrice').value);
-      const image = $('roomImage').value.trim() || DEFAULT_IMAGES[type];
+      const image = $('roomImage').value.trim() || TYPE_FALLBACKS[type];
       const status = $('roomStatus').value;
 
       let rooms = getData(STORAGE.rooms);
@@ -510,10 +550,33 @@
       refreshAll();
     };
 
+    $('bookingSaveBtn').onclick = () => {
+      const customer = $('bookingCustomer').value.trim();
+      const roomId = Number($('bookingRoomSelect').value);
+      const checkin = $('bookingCheckin').value;
+      const checkout = $('bookingCheckout').value;
+
+      if (!customer || !roomId || !checkin || !checkout) {
+        alert('Please fill out all booking fields.');
+        return;
+      }
+
+      let bookings = getData(STORAGE.bookings);
+      bookings.push({ id: Date.now(), customer, roomId, checkin, checkout });
+      setData(STORAGE.bookings, bookings);
+
+      let rooms = getData(STORAGE.rooms).map(r => r.id === roomId ? { ...r, status: 'booked' } : r);
+      setData(STORAGE.rooms, rooms);
+
+      bootstrap.Modal.getInstance($('bookingModal')).hide();
+      $('bookingForm').reset();
+      refreshAll();
+    };
+
     $('roomSearch').oninput = renderRooms;
     $('roomTypeFilter').onchange = renderRooms;
 
   })();
 </script>
 </body>
-</html>
+</html> 
